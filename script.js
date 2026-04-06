@@ -1,9 +1,21 @@
 // API Base URL - Automatically determine based on how the page is accessed
 const getApiBaseUrl = () => {
+    // 1. Check for manual override in localStorage (useful for debugging)
+    const manualUrl = localStorage.getItem('API_BASE_URL_OVERRIDE');
+    if (manualUrl) return manualUrl;
+
+    // 2. Logic for Local Development
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         return '/api';
     }
-    return 'http://localhost:3000/api';
+
+    // 3. Logic for GitHub Pages or Production
+    // If running on HTTPS, ensure fallback is also HTTPS (though localhost:3000 is still used as last resort)
+    const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+    
+    // IMPORTANT: Update this URL for your production backend deployment
+    // Example: return 'https://brightleaf-academy-api.render.com/api';
+    return `${protocol}//localhost:3000/api`;
 };
 
 const API_BASE_URL = getApiBaseUrl();
