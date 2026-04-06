@@ -1219,17 +1219,28 @@ tbody tr:last-child {
 
 .draggable-label {
     position: absolute;
-    padding: 5px 10px;
-    background: rgba(102, 126, 234, 0.8);
+    background: rgba(102, 126, 234, 0.85);
     color: white;
-    font-size: 12px;
-    font-weight: bold;
-    border-radius: 4px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
     cursor: move;
-    white-space: nowrap;
-    pointer-events: none; /* Let clicks pass to the canvas for position setting */
     transform: translate(-50%, -50%);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    pointer-events: none; /* Mouse clicks pass to canvas for positioning */
+    white-space: nowrap;
+    border: 2px solid white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: background 0.2s, transform 0.1s;
+    user-select: none;
+    z-index: 100;
+}
+
+.draggable-label.active {
+    background: var(--secondary);
+    transform: translate(-50%, -50%) scale(1.05);
+    z-index: 101;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
 }
 
 .draggable-label::after {
@@ -1346,23 +1357,8 @@ tbody tr:last-child {
     display: block;
 }
 
-.draggable-label {
-    position: absolute;
-    background: rgba(102, 126, 234, 0.8);
-    color: white;
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: move;
-    transform: translate(-50%, -50%);
-    pointer-events: none; /* Make clicks pass through to canvas for repositioning */
-    white-space: nowrap;
-    border: 1px solid white;
-}
-
 .layout-canvas:active .draggable-label {
-    opacity: 0.7;
+    opacity: 0.8;
 }
 
 .layout-toolbar .btn-pill {

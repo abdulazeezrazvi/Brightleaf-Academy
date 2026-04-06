@@ -591,6 +591,52 @@ app.post('/api/fee-payments', checkDB, async (req, res) => {
     }
 });
 
+app.post('/api/fee-exemptions/:studentCode', checkDB, async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const { studentCode } = req.params;
+        await client.query('BEGIN');
+
+        // 1. Calculate remaining balance
+        const { rows: stats } = await client.query(
+            `SELECT s.total_fee, COALESCE(SUM(f.amount), 0) as paid_fee
+             FROM students s
+             LEFT JOIN fee_payments f ON s.student_code = f.student_code
+             WHERE s.student_code = $1
+             GROUP BY s.id, s.total_fee`,
+            [studentCode]
+        );
+
+        if (stats.length === 0) {
+            throw new Error('Student not found');
+        }
+
+        const balance = parseFloat(stats[0].total_fee) - parseFloat(stats[0].paid_fee);
+
+        if (balance <= 0) {
+            return res.json({ success: true, message: 'No balance to exempt' });
+        }
+
+        // 2. Record exemption payment
+        await client.query(
+            `INSERT INTO fee_payments (student_code, amount, payment_mode, payment_date, remarks)
+             VALUES ($1, $2, $3, CURRENT_DATE, $4)`,
+            [studentCode, balance, 'exemption', 'Full balance exemption']
+        );
+
+        await client.query('COMMIT');
+        await logActivity('admin', 'admin', 'fee_exemption', `Exempted full balance of ₹${balance} for student: ${studentCode}`);
+
+        res.json({ success: true, exemptedAmount: balance });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Exemption error:', error);
+        res.status(500).json({ error: error.message || 'Failed to exempt balance' });
+    } finally {
+        client.release();
+    }
+});
+
 // ========== ATTENDANCE API ===========
 
 app.get('/api/attendance/:batchId', checkDB, async (req, res) => {

@@ -813,6 +813,14 @@ function setActiveLabel(key) {
         photoControls.style.display = key === 'student_photo' ? 'flex' : 'none';
     }
 
+    // Highlight active label on canvas
+    document.querySelectorAll('.draggable-label').forEach(label => {
+        label.classList.remove('active');
+        if (label.id === `label_${key}`) {
+            label.classList.add('active');
+        }
+    });
+
     document.querySelectorAll('.btn-pill').forEach(btn => {
         btn.classList.remove('active');
         if (btn.innerText.toLowerCase().includes(key.replace('_', ' '))) {
@@ -929,7 +937,7 @@ function displayCertificate(certificate) {
                 <div class="cert-data" style="top: ${layout.issue_date?.top || 72}%; left: ${layout.issue_date?.left || 50}%; font-size: 16px; position: absolute; transform: translate(-50%, -50%); color: #333; white-space: nowrap;">${formatDate(certificate.issue_date)}</div>
                 
                 ${certificate.photo_path || (certificate.student_data && certificate.student_data.photo_path) ? `
-                <div class="cert-photo" style="top: ${layout.student_photo?.top || 20}%; left: ${layout.student_photo?.left || 80}%; position: absolute; transform: translate(-50%, -50%); width: 120px; height: 140px; border: 2px solid #ccc; overflow: hidden; background: #eee;">
+                <div class="cert-photo" style="top: ${layout.student_photo?.top || 20}%; left: ${layout.student_photo?.left || 80}%; position: absolute; transform: translate(-50%, -50%); width: ${layout.student_photo?.width || 120}px; height: ${layout.student_photo?.height || 140}px; border: 2px solid #ccc; overflow: hidden; background: #eee;">
                     <img src="${certificate.photo_path || (certificate.student_data && certificate.student_data.photo_path)}" alt="Student Photo" style="width: 100%; height: 100%; object-fit: cover;" />
                 </div>` : ''}
             </div>
