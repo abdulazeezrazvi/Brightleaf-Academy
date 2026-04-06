@@ -44,6 +44,18 @@
                 <a href="#" class="nav-link active" data-section="dashboard">
                     <i class="fas fa-th-large"></i> Dashboard
                 </a>
+                <a href="#" class="nav-link" data-section="students">
+                    <i class="fas fa-users"></i> Students
+                </a>
+                <a href="#" class="nav-link" data-section="admissions">
+                    <i class="fas fa-user-plus"></i> Admissions
+                </a>
+                <a href="#" class="nav-link" data-section="fees">
+                    <i class="fas fa-money-bill-wave"></i> Fee Management
+                </a>
+                <a href="#" class="nav-link" data-section="results">
+                    <i class="fas fa-chart-bar"></i> Results
+                </a>
                 <a href="#" class="nav-link" data-section="courses">
                     <i class="fas fa-book"></i> Courses
                 </a>
@@ -112,6 +124,227 @@
                         <h3><i class="fas fa-history"></i> Recent Activities</h3>
                         <div id="recentActivities" class="activity-list"></div>
                     </div>
+                </div>
+            </section>
+            
+            <!-- Students Management -->
+            <section id="students" class="dashboard-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-users"></i> Students Management</h2>
+                    <div class="section-actions">
+                        <input type="text" id="studentSearch" placeholder="Search by name or code..." class="search-input">
+                    </div>
+                </div>
+                <div id="studentsTable" class="table-container">
+                    <!-- Students table will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Admissions -->
+            <section id="admissions" class="dashboard-section">
+                <h2><i class="fas fa-user-plus"></i> New Admission</h2>
+                <form id="admissionForm" class="form-card">
+                    <h3>Personal Information</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Full Name *</label>
+                            <input type="text" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Date of Birth *</label>
+                            <input type="date" name="dob" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Mobile Number *</label>
+                            <input type="tel" name="phone" pattern="[0-9]{10}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email *</label>
+                            <input type="email" name="email" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Guardian Name *</label>
+                            <input type="text" name="guardian_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Aadhar Card Number *</label>
+                            <input type="text" name="aadhar_number" pattern="[0-9]{12}" placeholder="12-digit Aadhar Number" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Student Photo * (White background preferred)</label>
+                            <input type="file" name="photo" accept="image/*" required>
+                        </div>
+                    </div>
+
+                    <h3>Address Information</h3>
+                    <div class="form-group">
+                        <label>Address *</label>
+                        <textarea name="address" rows="3" required></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>City *</label>
+                            <input type="text" name="city" required>
+                        </div>
+                        <div class="form-group">
+                            <label>State *</label>
+                            <input type="text" name="state" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Pincode *</label>
+                            <input type="text" name="pincode" pattern="[0-9]{6}" required>
+                        </div>
+                    </div>
+
+                    <h3>Course Information</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Course *</label>
+                            <select name="course" id="admissionCourseSelect" required>
+                                <option value="">Select Course</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Batch Timing *</label>
+                            <select name="batch_id" id="admissionBatchSelect" required>
+                                <option value="">Select Batch</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <h3>Fee Information</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Total Fee *</label>
+                            <input type="number" name="total_fee" id="admissionTotalFeeInput" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Admission Fee Paid *</label>
+                            <input type="number" name="admission_fee" id="admissionFeePaidInput" min="0" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="background: rgba(102, 126, 234, 0.05); padding: 15px; border-radius: 10px; border: 1px dashed var(--primary); margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <input type="checkbox" id="admIsReducedFee" name="is_reduced_fee" style="width: 18px; height: 18px;">
+                            <label for="admIsReducedFee" style="margin-bottom: 0; cursor: pointer; font-weight: 600; color: var(--primary);">Enable Special Fee Reduction (Poor Students/Scholarship)</label>
+                        </div>
+                        <div id="admReductionDetails" style="display: none; padding-top: 10px; border-top: 1px solid rgba(102, 126, 234, 0.1);">
+                            <label>Original Course Fee</label>
+                            <input type="number" id="admOriginalFeeDisplay" name="original_fee" readonly style="background: rgba(0,0,0,0.03); border: 1px solid #ddd;">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Portal Password *</label>
+                        <input type="password" name="password" placeholder="Set student password" required>
+                    </div>
+
+                    <button type="submit" class="btn-primary btn-full">
+                        <i class="fas fa-user-plus"></i> Complete Admission
+                    </button>
+                </form>
+            </section>
+
+            <!-- Fee Management -->
+            <section id="fees" class="dashboard-section">
+                <h2><i class="fas fa-money-bill-wave"></i> Fee Management</h2>
+                <div class="fee-search">
+                    <input type="text" id="feeStudentCode" placeholder="Enter Student Code..." class="search-input">
+                    <button class="btn-primary" onclick="searchStudentForFee()">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+                <div id="feePaymentSection" class="fee-payment-section" style="display: none;">
+                    <div class="student-details-card" id="feeStudentDetails"></div>
+                    <form id="feePaymentForm" class="form-card">
+                        <h3>Record Fee Payment</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Payment Amount *</label>
+                                <input type="number" id="paymentAmount" min="0" placeholder="Enter amount">
+                            </div>
+                            <div class="form-group">
+                                <label>Payment Mode *</label>
+                                <select id="paymentMode" required>
+                                    <option value="cash">Cash</option>
+                                    <option value="upi">UPI</option>
+                                    <option value="bank_transfer">Bank Transfer</option>
+                                    <option value="cheque">Cheque</option>
+                                    <option value="exemption">Fee Exemption (BPL/Special)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Payment Reference Number</label>
+                            <input type="text" id="paymentRef" placeholder="Transaction ID / Cheque Number">
+                        </div>
+                        <div class="form-group">
+                            <label>Remarks</label>
+                            <textarea id="paymentRemarks" rows="2" placeholder="Ex: Full balance exemption for poor student"></textarea>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button type="submit" class="btn-primary" style="flex: 2;">
+                                <i class="fas fa-check"></i> Record Payment
+                            </button>
+                            <button type="button" class="btn-secondary" id="exemptBalanceBtn" onclick="exemptFullBalance()" style="flex: 1; background: var(--red); border-color: var(--red); color: white;">
+                                <i class="fas fa-hand-holding-heart"></i> Exempt Full
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div id="feeHistoryContainer" class="table-container" style="margin-top: 30px; display: none;">
+                        <h3>Payment History</h3>
+                        <div id="feeHistoryTable">
+                            <!-- History will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Management -->
+            <section id="results" class="dashboard-section">
+                <h2><i class="fas fa-chart-bar"></i> Results Management</h2>
+                <div class="results-search">
+                    <input type="text" id="resultStudentCode" placeholder="Enter Student Code..." class="search-input">
+                    <button class="btn-primary" onclick="searchStudentForResult()">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+                <div id="resultEntrySection" class="result-entry-section" style="display: none;">
+                    <div id="resStudentCard"></div>
+                    <form id="resultForm" class="form-card">
+                        <h3>Enter Subject Marks</h3>
+                        <div id="subjectMarksContainer"></div>
+                        <div class="form-group">
+                            <label>Overall Grade *</label>
+                            <select id="overallGrade" required>
+                                <option value="">Select Grade</option>
+                                <option value="A+">A+ (Excellent)</option>
+                                <option value="A">A (Very Good)</option>
+                                <option value="B+">B+ (Good)</option>
+                                <option value="B">B (Average)</option>
+                                <option value="C">C (Needs Improvement)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Percentage *</label>
+                            <input type="number" id="percentage" min="0" max="100" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Remarks</label>
+                            <textarea id="resultRemarks" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i> Save Result
+                        </button>
+                    </form>
                 </div>
             </section>
 

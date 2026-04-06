@@ -28,7 +28,7 @@ async function handleLogin(type, e) {
         const pass = document.getElementById('adminPassword').value;
 
         try {
-            const res = await fetch('http://localhost:3000/api/admin/login', {
+            const res = await fetch(`${API_BASE_URL}/admin/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: user, password: pass })
@@ -51,7 +51,7 @@ async function handleLogin(type, e) {
         const pass = document.getElementById('studentPassword').value;
         
         try {
-            const res = await fetch('http://localhost:3000/api/student/login', {
+            const res = await fetch(`${API_BASE_URL}/student/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ studentCode: code, password: pass })
@@ -1338,6 +1338,54 @@ async function deleteStudent(studentCode) {
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
     updateGlobalBranding();
+
+    // Login page tab switching logic
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.login-form').forEach(f => f.classList.remove('active'));
+            
+            btn.classList.add('active');
+            const tabId = btn.getAttribute('data-tab');
+            document.getElementById(`${tabId}LoginForm`).classList.add('active');
+        });
+    });
+
+    // Form Submissions
+    const adminForm = document.getElementById('adminLoginForm');
+    if (adminForm) adminForm.addEventListener('submit', (e) => handleLogin('admin', e));
+
+    const studentForm = document.getElementById('studentLoginForm');
+    if (studentForm) studentForm.addEventListener('submit', (e) => handleLogin('student', e));
+
+    // Dashboard Navigation
+    document.querySelectorAll('.nav-link[data-section]').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const sectionId = link.getAttribute('data-section');
+            
+            // Show page/section logic
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+            
+            document.querySelectorAll('.dashboard-section').forEach(s => s.classList.remove('active'));
+            const section = document.getElementById(`admin-${sectionId}`) || document.getElementById(`student-${sectionId}`);
+            if (section) section.classList.add('active');
+        });
+    });
+
+    // Student Admission Form Submit
+    const admissionForm = document.getElementById('admissionForm');
+    if (admissionForm) admissionForm.addEventListener('submit', handleAdmissionSubmit);
+
+    // Fee payment form
+    const feeForm = document.getElementById('feePaymentForm');
+    if (feeForm) feeForm.addEventListener('submit', handleFeePaymentSubmit);
+
+    // Result form
+    const resultForm = document.getElementById('resultForm');
+    if (resultForm) resultForm.addEventListener('submit', handleResultSubmit);
 });
 
 async function updateGlobalBranding() {

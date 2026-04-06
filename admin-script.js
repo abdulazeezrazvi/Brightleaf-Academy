@@ -81,6 +81,37 @@ function logout() {
     window.location.href = 'index.html'; // Redirect to main login
 }
 
+function navigateToSection(sectionId) {
+    // Hide all sections
+    document.querySelectorAll('.dashboard-section').forEach(section => {
+        section.classList.remove('active');
+    });
+
+    // Remove active class from all nav links
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+
+    // Show selected section
+    const targetSection = document.getElementById(sectionId);
+    if (targetSection) {
+        targetSection.classList.add('active');
+    }
+
+    // Set active class on corresponding nav link
+    const targetLink = document.querySelector(`.nav-link[data-section="${sectionId}"]`);
+    if (targetLink) {
+        targetLink.classList.add('active');
+    }
+
+    // Trigger section-specific loading
+    if (sectionId === 'students') loadStudentsTable();
+    if (sectionId === 'admissions') {
+        loadCoursesForAdmission();
+        loadBatchesForAdmission();
+    }
+}
+
 // ========== EVENT LISTENERS ==========
 
 function setupEventListeners() {
@@ -104,6 +135,41 @@ function setupEventListeners() {
     // Batch form
     const batchForm = document.getElementById('batchForm');
     if (batchForm) batchForm.addEventListener('submit', handleBatchSubmit);
+
+    // Admissions
+    const admissionForm = document.getElementById('admissionForm');
+    if (admissionForm) admissionForm.addEventListener('submit', handleAdmissionSubmit);
+
+    // Fee payment
+    const feeForm = document.getElementById('feePaymentForm');
+    if (feeForm) feeForm.addEventListener('submit', handleFeePaymentSubmit);
+
+    // Result entry
+    const resultForm = document.getElementById('resultForm');
+    if (resultForm) resultForm.addEventListener('submit', handleResultSubmit);
+
+    // Student search
+    const studSearch = document.getElementById('studentSearch');
+    if (studSearch) studSearch.addEventListener('input', loadStudentsTable);
+
+    // Course selection in admission - update fee
+    const admCourseSel = document.getElementById('admissionCourseSelect');
+    if (admCourseSel) {
+        admCourseSel.addEventListener('change', () => {
+            const opt = admCourseSel.options[admCourseSel.selectedIndex];
+            const fee = opt.getAttribute('data-fee') || 0;
+            document.getElementById('admissionTotalFeeInput').value = fee;
+            document.getElementById('admOriginalFeeDisplay').value = fee;
+        });
+    }
+
+    // Special fee reduction toggle
+    const redToggle = document.getElementById('admIsReducedFee');
+    if (redToggle) {
+        redToggle.addEventListener('change', () => {
+            document.getElementById('admReductionDetails').style.display = redToggle.checked ? 'block' : 'none';
+        });
+    }
 
     // Institute settings
     const instForm = document.getElementById('instituteSettingsForm');
@@ -1125,7 +1191,259 @@ function downloadCertificateAdmin() {
     showToast('Certificate opened for download!', 'success');
 }
 
-// ========== UTILITIES ==========
+// ========== ADMINISTRATIVE FUNCTIONS ==========
+
+async function loadStudentsTable() {
+    const tableDiv = document.getElementById('studentsTable');
+    if (!tableDiv) return;
+    
+    tableDiv.innerHTML = '<div class="loading">Loading students...</div>';
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/students`);
+        const data = await res.json();
+        
+        if (data.success) {
+            students = data.students;
+            const searchTerm = document.getElementById('studentSearch')?.value.toLowerCase() || '';
+            const filtered = students.filter(s => 
+                s.name.toLowerCase().includes(searchTerm) || 
+                s.student_code.toLowerCase().includes(searchTerm)
+            );
+            
+            if (filtered.length === 0) {
+                tableDiv.innerHTML = '<div class="no-data">No students found</div>';
+                return;
+            }
+            
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Photo</th>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Course</th>
+                            <th>Batch</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            filtered.forEach(s => {
+                html += `
+                    <tr>
+                        <td><img src="${s.photo_url || 'https://via.placeholder.com/40'}" class="table-img" style="width:40px; height:40px; border-radius:50%; object-fit:cover;"></td>
+                        <td><strong>${s.student_code}</strong></td>
+                        <td>${s.name}</td>
+                        <td>${s.course_name || s.course_id}</td>
+                        <td>${s.batch_name || s.batch_id}</td>
+                        <td>${s.phone}</td>
+                        <td><span class="status-btn ${s.status === 'active' ? 'status-active' : 'status-inactive'}">${s.status}</span></td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            tableDiv.innerHTML = html;
+        }
+    } catch (err) { tableDiv.innerHTML = '<div class="error">Failed to load students</div>'; }
+}
+
+async function loadCoursesForAdmission() {
+    const select = document.getElementById('admissionCourseSelect');
+    if (!select) return;
+    try {
+        const res = await fetch(`${API_BASE_URL}/courses`);
+        const data = await res.json();
+        if (data.success) {
+            select.innerHTML = '<option value="">Select Course</option>' + 
+                data.courses.map(c => `<option value="${c.code}" data-fee="${c.fee}">${c.name} - ₹${formatNumber(c.fee)}</option>`).join('');
+        }
+    } catch (e) {}
+}
+
+async function loadBatchesForAdmission() {
+    const select = document.getElementById('admissionBatchSelect');
+    if (!select) return;
+    try {
+        const res = await fetch(`${API_BASE_URL}/batches`);
+        const data = await res.json();
+        if (data.success) {
+            select.innerHTML = '<option value="">Select Batch</option>' + 
+                data.batches.map(b => `<option value="${b.id}">${b.name} (${b.timing})</option>`).join('');
+        }
+    } catch (e) {}
+}
+
+async function handleAdmissionSubmit(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/students`, {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('Admission completed successfully!', 'success');
+            e.target.reset();
+            navigateToSection('students');
+        } else {
+            showToast(data.error || 'Admission failed', 'error');
+        }
+    } catch (err) { showToast('Server error', 'error'); }
+    finally { btn.disabled = false; }
+}
+
+async function searchStudentForFee() {
+    const code = document.getElementById('feeStudentCode').value;
+    if (!code) return;
+    try {
+        const res = await fetch(`${API_BASE_URL}/students/${code}`);
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('feePaymentSection').style.display = 'block';
+            const s = data.student;
+            document.getElementById('feeStudentDetails').innerHTML = `
+                <div class="student-mini-profile" style="display:flex; gap:15px; align-items:center; background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom:20px;">
+                    <img src="${s.photo_url}" style="width: 80px; height: 80px; border-radius: 10px; object-fit:cover;">
+                    <div>
+                        <h4 style="margin:0;">${s.name} (${s.student_code})</h4>
+                        <p style="margin:5px 0;">${s.course_name || s.course_id.toUpperCase()} | Total: ₹${formatNumber(s.total_fee)}</p>
+                        <p style="margin:0; color: var(--red); font-weight: bold;">Remaining Balance: ₹${formatNumber(s.total_fee - s.paid_fee)}</p>
+                    </div>
+                </div>
+            `;
+            loadFeeHistory(code);
+        } else { showToast('Student not found', 'error'); }
+    } catch (e) {}
+}
+
+async function loadFeeHistory(code) {
+    const container = document.getElementById('feeHistoryContainer');
+    const tableDiv = document.getElementById('feeHistoryTable');
+    try {
+        const res = await fetch(`${API_BASE_URL}/fee-payments/${code}`);
+        const data = await res.json();
+        if (data.success && data.payments.length > 0) {
+            container.style.display = 'block';
+            let html = '<table class="data-table"><thead><tr><th>Date</th><th>Amount</th><th>Mode</th><th>Reference</th></tr></thead><tbody>';
+            data.payments.forEach(p => {
+                html += `<tr><td>${formatDate(p.payment_date)}</td><td>₹${formatNumber(p.amount)}</td><td>${p.payment_mode} ${p.payment_mode === 'exemption' ? '🏷️' : ''}</td><td>${p.reference_no || '-'}</td></tr>`;
+            });
+            tableDiv.innerHTML = html + '</tbody></table>';
+        } else { container.style.display = 'none'; }
+    } catch (e) {}
+}
+
+async function exemptFullBalance() {
+    const code = document.getElementById('feeStudentCode').value;
+    if (!code || !confirm('Are you sure you want to exempt the entire remaining balance for this student?')) return;
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/fee-exemptions/${code}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            showToast('Full balance exempted!', 'success');
+            searchStudentForFee();
+        }
+    } catch (e) {}
+}
+
+async function handleFeePaymentSubmit(e) {
+    e.preventDefault();
+    const code = document.getElementById('feeStudentCode').value;
+    const amount = document.getElementById('paymentAmount').value;
+    const mode = document.getElementById('paymentMode').value;
+    const ref = document.getElementById('paymentRef').value;
+    const remarks = document.getElementById('paymentRemarks').value;
+    
+    if (!amount || amount <= 0) return showToast('Enter valid amount', 'error');
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/fee-payments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ studentCode: code, amount, payment_mode: mode, reference_no: ref, remarks })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('Payment recorded!', 'success');
+            e.target.reset();
+            searchStudentForFee();
+        }
+    } catch (e) {}
+}
+
+async function searchStudentForResult() {
+    const code = document.getElementById('resultStudentCode').value;
+    if (!code) return;
+    try {
+        const res = await fetch(`${API_BASE_URL}/students/${code}`);
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('resultEntrySection').style.display = 'block';
+            const s = data.student;
+            document.getElementById('resStudentCard').innerHTML = `<div style="background:#f0f4ff; padding:15px; border-radius:10px; margin-bottom:20px;"><h4>Entering results for: ${s.name} (${s.student_code})</h4><p>Course: ${s.course_name || s.course_id.toUpperCase()}</p></div>`;
+            
+            // Try to find course details to get subjects
+            const cRes = await fetch(`${API_BASE_URL}/courses`);
+            const cData = await cRes.json();
+            if (cData.success) {
+                const course = cData.courses.find(c => c.code === s.course_id || c.name === s.course_id);
+                if (course && course.description) {
+                    // Extract subjects from description if possible, or use defaults
+                    const subjects = ["Computer Fundamentals", "Operating Systems", "Office Automation", "Internet & Web"];
+                    document.getElementById('subjectMarksContainer').innerHTML = subjects.map(sub => `
+                        <div class="form-group">
+                            <label>${sub}</label>
+                            <input type="number" class="subject-mark" data-subject="${sub}" placeholder="Out of 100" required style="width:100%; padding:8px; border-radius:5px; border:1px solid #ddd;">
+                        </div>
+                    `).join('');
+                }
+            }
+        } else { showToast('Student not found', 'error'); }
+    } catch (e) {}
+}
+
+async function handleResultSubmit(e) {
+    e.preventDefault();
+    const code = document.getElementById('resultStudentCode').value;
+    const marks = {};
+    document.querySelectorAll('.subject-mark').forEach(inp => {
+        marks[inp.getAttribute('data-subject')] = inp.value;
+    });
+    
+    const payload = {
+        studentCode: code,
+        marks: JSON.stringify(marks),
+        percentage: document.getElementById('percentage').value,
+        grade: document.getElementById('overallGrade').value,
+        remarks: document.getElementById('resultRemarks').value
+    };
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/results`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('Result saved successfully!', 'success');
+            e.target.reset();
+            document.getElementById('resultEntrySection').style.display = 'none';
+        } else {
+            showToast(data.error || 'Failed to save result', 'error');
+        }
+    } catch (e) {}
+}
 
 function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('active');
