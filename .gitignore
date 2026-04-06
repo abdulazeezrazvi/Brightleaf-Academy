@@ -1,0 +1,13 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log
+
+# Environment variables
+.env
+
+# Uploaded files / Media (if you want to ignore local uploads)
+uploads/
+
+# OS generated files
+.DS_Store
+Thumbs.db
